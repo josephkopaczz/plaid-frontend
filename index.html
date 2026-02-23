@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>KBDBS Bank Connect</title>
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+</head>
+<body style="font-family: Arial; text-align:center; margin-top:100px;">
+
+  <h2>Connect Your Bank</h2>
+  <button id="connect-bank" style="padding:15px 30px; font-size:18px;">
+    Connect Bank
+  </button>
+
+  <script>
+    document.getElementById('connect-bank').onclick = async function() {
+
+      const response = await fetch('https://plaid-backend-u0eg.onrender.com/create_link_token', {
+        method: 'POST'
+      });
+
+      const data = await response.json();
+
+      const handler = Plaid.create({
+        token: data.link_token,
+        onSuccess: function(public_token) {
+
+          fetch('https://plaid-backend-u0eg.onrender.com/exchange_token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ public_token })
+          })
+          .then(res => res.json())
+          .then(result => {
+            alert("Bank Connected Successfully");
+            console.log("Access Token:", result.access_token);
+          })
+          .catch(err => console.error(err));
+
+        }
+      });
+
+      handler.open();
+    };
+  </script>
+
+</body>
+</html>
