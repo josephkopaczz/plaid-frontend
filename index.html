@@ -11,6 +11,8 @@
     Connect Bank
   </button>
 
+  <pre id="output" style="text-align:left; width:80%; margin:40px auto;"></pre>
+
   <script>
     document.getElementById('connect-bank').onclick = async function() {
 
@@ -30,9 +32,21 @@
             body: JSON.stringify({ public_token })
           })
           .then(res => res.json())
-          .then(result => {
-            alert("Bank Connected Successfully");
-            console.log("Access Token:", result.access_token);
+          .then(async result => {
+
+            const access_token = result.access_token;
+
+            const transactions = await fetch('https://plaid-backend-u0eg.onrender.com/get_transactions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ access_token })
+            });
+
+            const txData = await transactions.json();
+
+            document.getElementById('output').innerText =
+              JSON.stringify(txData.transactions.slice(0, 10), null, 2);
+
           })
           .catch(err => console.error(err));
 
