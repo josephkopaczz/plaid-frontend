@@ -1,59 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>KBDBS Bank Connect</title>
+  <title>KBDBS Income Verification</title>
   <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 </head>
 <body style="font-family: Arial; text-align:center; margin-top:100px;">
 
-  <h2>Connect Your Bank</h2>
-  <button id="connect-bank" style="padding:15px 30px; font-size:18px;">
-    Connect Bank
+  <h2>Upload Income Documents</h2>
+  <button id="connect-income" style="padding:15px 30px; font-size:18px;">
+    Start Income Verification
   </button>
 
   <pre id="output" style="text-align:left; width:80%; margin:40px auto;"></pre>
 
   <script>
-    document.getElementById('connect-bank').onclick = async function() {
+    document.getElementById('connect-income').onclick = async function() {
 
-      const response = await fetch('https://plaid-backend-u0eg.onrender.com/create_link_token', {
-        method: 'POST'
-      });
+      try {
 
-      const data = await response.json();
+        const response = await fetch('https://plaid-backend-u0eg.onrender.com/create_income_link_token', {
+          method: 'POST'
+        });
 
-      const handler = Plaid.create({
-        token: data.link_token,
-        onSuccess: function(public_token) {
+        const data = await response.json();
+        console.log("Backend response:", data);
 
-          fetch('https://plaid-backend-u0eg.onrender.com/exchange_token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ public_token })
-          })
-          .then(res => res.json())
-          .then(async result => {
-
-            const access_token = result.access_token;
-
-            const transactions = await fetch('https://plaid-backend-u0eg.onrender.com/get_transactions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ access_token })
-            });
-
-            const txData = await transactions.json();
-
-            document.getElementById('output').innerText =
-              JSON.stringify(txData.transactions.slice(0, 10), null, 2);
-
-          })
-          .catch(err => console.error(err));
-
+        if (!data.link_token) {
+          document.getElementById('output').innerText =
+            "No link_token returned:\n" + JSON.stringify(data, null, 2);
+          return;
         }
-      });
 
-      handler.open();
+        const handler = Plaid.create({
+          token: data.link_token,
+          onSuccess: function(public_token, metadata) {
+            document.getElementById('output').innerText =
+              "Success:\n" + JSON.stringify(metadata, null, 2);
+          },
+          onExit: function(err, metadata) {
+            if (err) {
+              document.getElementById('output').innerText =
+                "Error:\n" + JSON.stringify(err, null, 2);
+            }
+          }
+        });
+
+        handler.open();
+
+      } catch (err) {
+        document.getElementById('output').innerText =
+          "Frontend error:\n" + err;
+      }
+
     };
   </script>
 
